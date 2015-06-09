@@ -120,14 +120,20 @@ void huffman_tree_list_free(huffman_tree_list_t *l) {
  * Returns 1 if the string s contains the character c and 0 if it does not.
  */
 int contains(char *s, char c) {
-  return 0;
+  return strchr(s, c) != NULL;
 }
 
 /*
  * Returns the number of occurrences of c in s.
  */
 int frequency(char *s, char c) {
-  return 0;
+  int counter = 0;
+  char *ptr = strchr(s, c);
+  while (ptr != NULL) {
+    counter++;
+    ptr = strchr(ptr + 1, c);
+  }
+  return counter;
 }
 
 /*
@@ -138,7 +144,15 @@ int frequency(char *s, char c) {
  *      characters.
  */
 char *nub(char *s) {
-  return NULL;
+  char *result = calloc(strlen(s), sizeof(char));
+  int counter = 0;
+  for (char *ptr = s; *ptr != '\0'; ptr++) {
+    if(!contains(result, *ptr)) {
+      result[counter] = *ptr;
+      counter++;
+    }
+  }
+  return result;
 }
 
 /*
@@ -153,7 +167,28 @@ char *nub(char *s) {
 huffman_tree_list_t *huffman_tree_list_add(huffman_tree_list_t *l,
                                             huffman_tree_t *t) {
 
-  return NULL;
+  huffman_tree_list_t *newelem = malloc(sizeof(huffman_tree_list_t));
+  newelem->tree = t;
+  newelem->next = NULL;
+
+  if (l == NULL) {
+    return newelem;
+  } else if (t->count <= l->tree->count) {
+    newelem->next = l;
+    return newelem;
+  }
+
+  huffman_tree_list_t *prev = l;
+  huffman_tree_list_t *curr = prev->next;
+  while (curr != NULL) {
+    if (t->count <= curr->tree->count) break;
+    prev = curr;
+    curr = curr->next;
+  }
+
+  newelem->next = curr;
+  prev->next = newelem;
+  return l;
 }
 
 /*
@@ -167,7 +202,17 @@ huffman_tree_list_t *huffman_tree_list_add(huffman_tree_list_t *l,
  *        trees it contains.
  */
 huffman_tree_list_t *huffman_tree_list_build(char *s, char *t) {
-  return NULL;
+
+  huffman_tree_list_t *l = NULL;
+  
+  for (char *ptr = t; *ptr != '\0'; ptr++) {
+    huffman_tree_t *tree = calloc(1, sizeof(huffman_tree_t));
+    tree->count = frequency(s, *ptr);
+    tree->letter = *ptr;
+    l = huffman_tree_list_add(l, tree);
+  } 
+
+  return l;
 }
 
 /*
@@ -179,7 +224,24 @@ huffman_tree_list_t *huffman_tree_list_build(char *s, char *t) {
  * Post:  The resuling list contains a single, correctly-formed Huffman tree.
  */
 huffman_tree_list_t *huffman_tree_list_reduce(huffman_tree_list_t *l) {
-  return NULL;
+  assert(l != NULL);
+
+  if (l->next ==  NULL) {
+    return l;
+  } else {
+    huffman_tree_t *first = l->tree;
+    huffman_tree_t *second = l->next->tree;
+
+    huffman_tree_t *tree = calloc(1, sizeof(huffman_tree_t));
+    tree->count = first->count + second->count;
+    tree->left = first;
+    tree->right = second;
+    huffman_tree_list_t *new_l = l->next->next;
+    
+    free(l->next);
+    free(l);
+    return huffman_tree_list_reduce(huffman_tree_list_add(new_l, tree));
+  }
 }
 
 /*
